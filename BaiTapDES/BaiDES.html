@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chương Trình Mã Hóa DES</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input[type="text"], input[type="file"], input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chương Trình Mã Hóa DES</h1>
+        
+        <div class="form-group">
+            <label for="fileInput">Chọn File:</label>
+            <input type="file" id="fileInput">
+        </div>
+        
+        <div class="form-group">
+            <label for="keyInput">Nhập Mật Khẩu:</label>
+            <input type="password" id="keyInput" placeholder="Nhập mật khẩu bảo mật">
+        </div>
+        
+        <div class="buttons">
+            <button id="encryptBtn">Mã Hóa</button>
+            <button id="decryptBtn">Giải Mã</button>
+            <button id="downloadBtn" disabled>Tải Xuống</button>
+        </div>
+        
+        <div id="resultBox" class="result"></div>
+    </div>
+
+    <script>
+        // Các biến toàn cục
+        let processedData = null;
+        let resultFileName = "";
+        let originalFile = null;
+        let fileMetadata = null;
+        
+        // Các phần tử DOM
+        const fileInput = document.getElementById('fileInput');
+        const keyInput = document.getElementById('keyInput');
+        const encryptBtn = document.getElementById('encryptBtn');
+        const decryptBtn = document.getElementById('decryptBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resultBox = document.getElementById('resultBox');
+        
+        // Hàm hiển thị thông báo
+        function showMessage(message, type) {
+            resultBox.innerHTML = message;
+            resultBox.className = `result ${type}`;
+            resultBox.style.display = 'block';
+        }
+        
+        // Hàm kiểm tra key
+        function validateKey(key) {
+            if (!key || key.trim() === '') {
+                showMessage("Lỗi: Vui lòng nhập mật khẩu!", "error");
+                return false;
+            }
+            return true;
+        }
+        
+        // Hàm kiểm tra file
+        function validateFile() {
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showMessage("Lỗi: Vui lòng chọn file!", "error");
+                return false;
+            }
+            originalFile = fileInput.files[0];
+            return true;
+        }
+        
+        // Hàm đọc file dưới dạng mảng byte
+        function readFileAsArrayBuffer(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        }
+        
+        // Hàm đọc file dưới dạng text
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+        
+        // Hàm tạo key an toàn từ mật khẩu người dùng
+        function createSecureKey(password) {
+            // Sử dụng SHA-256 để tạo một key an toàn từ password
+            const hash = CryptoJS.SHA256(password);
+            // Trả về 64 ký tự hex (32 bytes)
+            return hash.toString();
+        }
+        
+        // Hàm chuyển ArrayBuffer thành WordArray (để CryptoJS xử lý)
+        function arrayBufferToWordArray(arrayBuffer) {
+            const bytes = new Uint8Array(arrayBuffer);
+            const words = [];
+            
+            for (let i = 0; i < bytes.length; i += 4) {
+                words.push(
+                    (bytes[i] << 24) | 
+                    ((i + 1 < bytes.length ? bytes[i + 1] : 0) << 16) |
+                    ((i + 2 < bytes.length ? bytes[i + 2] : 0) << 8) |
+                    (i + 3 < bytes.length ? bytes[i + 3] : 0)
+                );
+            }
+            
+            return CryptoJS.lib.WordArray.create(words, bytes.length);
+        }
+        
+        // Hàm chuyển WordArray thành Blob
+        function wordArrayToBlob(wordArray) {
+            const words = wordArray.words;
+            const sigBytes = wordArray.sigBytes;
+            const u8arr = new Uint8Array(sigBytes);
+            
+            for (let i = 0; i < sigBytes; i++) {
+                const byte = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
+                u8arr[i] = byte;
+            }
+            
+            return new Blob([u8arr]);
+        }
+        
+        // Hàm mã hóa file
+        async function encryptFile() {
+            if (!validateFile() || !validateKey(keyInput.value)) {
+                return;
+            }
+            
+            try {
+                // Đọc file
+                const arrayBuffer = await readFileAsArrayBuffer(originalFile);
+                const wordArray = arrayBufferToWordArray(arrayBuffer);
+                
+                // Tạo key an toàn từ mật khẩu
+                const secureKey = createSecureKey(keyInput.value);
+                
+                // Tạo metadata chứa thông tin file gốc và hash của mật khẩu để kiểm tra
+                fileMetadata = {
+                    name: originalFile.name,
+                    type: originalFile.type,
+                    keyVerification: CryptoJS.SHA256(keyInput.value).toString().substring(0, 16)
+                };
+                
+                // Mã hóa metadata và nội dung file
+                const encryptedMetadata = CryptoJS.AES.encrypt(
+                    JSON.stringify(fileMetadata), 
+                    secureKey
+                ).toString();
+                
+                // Mã hóa nội dung file
+                const encryptedContent = CryptoJS.AES.encrypt(
+                    wordArray, 
+                    secureKey
+                ).toString();
+                
+                // Kết hợp metadata và nội dung đã mã hóa
+                const finalData = {
+                    metadata: encryptedMetadata,
+                    content: encryptedContent
+                };
+                
+                // Lưu kết quả
+                processedData = JSON.stringify(finalData);
+                resultFileName = originalFile.name + ".enc";
+                
+                // Hiển thị thông báo thành công
+                showMessage("Mã hóa thành công! Bạn có thể tải xuống file kết quả.", "success");
+                downloadBtn.disabled = false;
+            } catch (error) {
+                console.error(error);
+                showMessage("Lỗi khi mã hóa: " + error.message, "error");
+                downloadBtn.disabled = true;
+            }
+        }
+        
+        // Hàm giải mã file
+        async function decryptFile() {
+            if (!validateFile() || !validateKey(keyInput.value)) {
+                return;
+            }
+            
+            try {
+                // Đọc file
+                const fileContent = await readFileAsText(originalFile);
+                let parsedData;
+                
+                try {
+                    parsedData = JSON.parse(fileContent);
+                    if (!parsedData.metadata || !parsedData.content) {
+                        throw new Error("Định dạng file không hợp lệ");
+                    }
+                } catch (e) {
+                    throw new Error("File không phải là file đã mã hóa hoặc bị hỏng!");
+                }
+                
+                // Tạo key an toàn từ mật khẩu
+                const secureKey = createSecureKey(keyInput.value);
+                
+                // Giải mã metadata
+                let decryptedMetadata;
+                try {
+                    const metadataBytes = CryptoJS.AES.decrypt(parsedData.metadata, secureKey);
+                    decryptedMetadata = JSON.parse(metadataBytes.toString(CryptoJS.enc.Utf8));
+                    
+                    // Kiểm tra mật khẩu
+                    const keyVerification = CryptoJS.SHA256(keyInput.value).toString().substring(0, 16);
+                    if (decryptedMetadata.keyVerification !== keyVerification) {
+                        throw new Error("Mật khẩu không đúng!");
+                    }
+                } catch (e) {
+                    throw new Error("Mật khẩu không đúng hoặc file bị hỏng!");
+                }
+                
+                // Giải mã nội dung file
+                const decryptedContent = CryptoJS.AES.decrypt(parsedData.content, secureKey);
+                
+                // Kiểm tra kết quả giải mã
+                if (decryptedContent.sigBytes <= 0) {
+                    throw new Error("Giải mã thất bại. Mật khẩu không đúng hoặc file bị hỏng!");
+                }
+                
+                // Lưu kết quả
+                processedData = decryptedContent;
+                resultFileName = decryptedMetadata.name;
+                
+                // Hiển thị thông báo thành công
+                showMessage("Giải mã thành công! Bạn có thể tải xuống file kết quả.", "success");
+                downloadBtn.disabled = false;
+            } catch (error) {
+                console.error(error);
+                showMessage("Lỗi khi giải mã: " + error.message, "error");
+                downloadBtn.disabled = true;
+            }
+        }
+        
+        // Hàm tải xuống file kết quả
+        function downloadResult() {
+            if (!processedData) {
+                showMessage("Không có dữ liệu để tải xuống!", "error");
+                return;
+            }
+            
+            try {
+                let blob;
+                
+                if (typeof processedData === 'string') {
+                    // Dữ liệu đã mã hóa
+                    blob = new Blob([processedData], {type: 'application/octet-stream'});
+                } else {
+                    // Dữ liệu đã giải mã
+                    blob = wordArrayToBlob(processedData);
+                }
+                
+                // Tạo URL và liên kết tải xuống
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = resultFileName;
+                document.body.appendChild(a);
+                a.click();
+                
+                // Dọn dẹp
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+                
+                showMessage("Đã tải xuống file: " + resultFileName, "success");
+            } catch (error) {
+                console.error(error);
+                showMessage("Lỗi khi tải xuống: " + error.message, "error");
+            }
+        }
+        
+        // Thêm các sự kiện lắng nghe
+        encryptBtn.addEventListener('click', encryptFile);
+        decryptBtn.addEventListener('click', decryptFile);
+        downloadBtn.addEventListener('click', downloadResult);
+        
+        // Reset khi chọn file mới
+        fileInput.addEventListener('change', function() {
+            downloadBtn.disabled = true;
+            resultBox.style.display = 'none';
+            processedData = null;
+        });
+        
+        // Reset khi thay đổi key
+        keyInput.addEventListener('input', function() {
+            if (processedData) {
+                downloadBtn.disabled = true;
+                resultBox.style.display = 'none';
+                processedData = null;
+            }
+        });
+    </script>
+</body>
+</html>
