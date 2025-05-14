@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chương Trình Mã Hóa DES</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+    
+        :root {
+            --primary-color: #3498db;
+            --primary-dark: #2980b9;
+            --secondary-color: #2ecc71;
+            --secondary-dark: #27ae60;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --light-bg: #f8f9fa;
+            --dark-text: #2c3e50;
+            --light-text: #ecf0f1;
+            --border-radius: 12px;
+            --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+    
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+    
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: var(--dark-text);
+        }
+    
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .app-header {
+            background: linear-gradient(to right, var(--primary-color), var(--primary-dark));
+            color: var(--light-text);
+            padding: 25px 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .app-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .app-header p {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .app-body {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark-text);
+            font-size: 15px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary-color);
+            font-size: 18px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 15px 15px 15px 45px;
+            border: 2px solid #e1e5ee;
+            border-radius: var(--border-radius);
+            font-size: 15px;
+            transition: var(--transition);
+            background-color: white;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-button {
+            background-color: var(--light-bg);
+            border: 2px solid #e1e5ee;
+            border-radius: var(--border-radius);
+            color: var(--dark-text);
+            padding: 15px 20px 15px 45px;
+            display: inline-block;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            font-size: 15px;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .file-input-button:hover {
+            background-color: #e9ecef;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .selected-file {
+            margin-top: 8px;
+            font-size: 14px;
+            color: var(--primary-color);
+            font-weight: 500;
+            display: none;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 15px 20px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: var(--light-text);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-success {
+            background-color: var(--secondary-color);
+            color: var(--light-text);
+        }
+
+        .btn-success:hover {
+            background-color: var(--secondary-dark);
+        }
+
+        .btn-download {
+            width: 100%;
+            background-color: var(--warning-color);
+            color: var(--light-text);
+        }
+
+        .btn-download:hover {
+            background-color: #e67e22;
+        }
+
+        .btn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            font-size: 15px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .success {
+            background-color: rgba(46, 204, 113, 0.2);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            color: #27ae60;
+        }
+
+        .error {
+            background-color: rgba(231, 76, 60, 0.2);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+            color: #c0392b;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #7f8c8d;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .loader-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary-color);
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loader-text {
+            color: var(--dark-text);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Animation styles */
+        .animate-in {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .container {
+                max-width: 100%;
+            }
+
+            .app-header h1 {
+                font-size: 24px;
+            }
+
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container animate-in">
+        <div class="app-header">
+            <h1>Chương Trình Mã Hóa DES</h1>
+            <p>Mã hóa và giải mã file an toàn với DES</p>
+        </div>
+        
+        <div class="app-body">
+            <div class="form-group">
+                <label for="fileInput">Chọn File:</label>
+                <div class="file-input-wrapper">
+                    <div class="file-input-button">
+                        <i class="fas fa-file input-icon"></i>
+                        <span id="fileButtonText">Chưa có file nào được chọn</span>
+                    </div>
+                    <input type="file" id="fileInput">
+                </div>
+                <div id="selectedFile" class="selected-file"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="keyInput">Nhập Mật Khẩu:</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-key input-icon"></i>
+                    <input type="password" id="keyInput" placeholder="Nhập mật khẩu bảo mật">
+                    <i class="fas fa-eye toggle-password" id="togglePassword"></i>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button id="encryptBtn" class="btn btn-primary">
+                    <i class="fas fa-lock"></i> Mã Hóa
+                </button>
+                <button id="decryptBtn" class="btn btn-success">
+                    <i class="fas fa-unlock"></i> Giải Mã
+                </button>
+            </div>
+            
+            <button id="downloadBtn" class="btn btn-download" disabled>
+                <i class="fas fa-download"></i> Tải Xuống Kết Quả
+            </button>
+            
+            <div id="loader" class="loader">
+                <div class="loader-spinner"></div>
+                <div class="loader-text">Đang xử lý...</div>
+            </div>
+            
+            <div id="resultBox" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Các biến toàn cục
+        let processedData = null;
+        let resultFileName = "";
+        let originalFile = null;
+        let fileMetadata = null;
+        
+        // Các phần tử DOM
+        const fileInput = document.getElementById('fileInput');
+        const fileButtonText = document.getElementById('fileButtonText');
+        const selectedFile = document.getElementById('selectedFile');
+        const keyInput = document.getElementById('keyInput');
+        const togglePassword = document.getElementById('togglePassword');
+        const encryptBtn = document.getElementById('encryptBtn');
+        const decryptBtn = document.getElementById('decryptBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resultBox = document.getElementById('resultBox');
+        const loader = document.getElementById('loader');
+        
+        // Hiển thị/ẩn mật khẩu
+        togglePassword.addEventListener('click', function() {
+            const type = keyInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            keyInput.setAttribute('type', type);
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+        
+        // Hiển thị tên file khi chọn
+        fileInput.addEventListener('change', function() {
+            if (fileInput.files.length > 0) {
+                const fileName = fileInput.files[0].name;
+                fileButtonText.textContent = "File đã chọn";
+                selectedFile.textContent = fileName;
+                selectedFile.style.display = 'block';
+            } else {
+                fileButtonText.textContent = "Chưa có file nào được chọn";
+                selectedFile.style.display = 'none';
+            }
+            
+            // Reset trạng thái
+            downloadBtn.disabled = true;
+            resultBox.style.display = 'none';
+            processedData = null;
+        });
+        
+        // Hàm hiển thị thông báo
+        function showMessage(message, type) {
+            resultBox.innerHTML = message;
+            resultBox.className = `result ${type}`;
+            resultBox.style.display = 'block';
+            resultBox.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Hiển thị/ẩn loading
+        function toggleLoading(show) {
+            if (show) {
+                loader.style.display = 'block';
+                encryptBtn.disabled = true;
+                decryptBtn.disabled = true;
+            } else {
+                loader.style.display = 'none';
+                encryptBtn.disabled = false;
+                decryptBtn.disabled = false;
+            }
+        }
+        
+        // Hàm kiểm tra key
+        function validateKey(key) {
+            if (!key || key.trim() === '') {
+                showMessage("<i class='fas fa-exclamation-circle'></i> Lỗi: Vui lòng nhập mật khẩu!", "error");
+                return false;
+            }
+            return true;
+        }
+        
+        // Hàm kiểm tra file
+        function validateFile() {
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showMessage("<i class='fas fa-exclamation-circle'></i> Lỗi: Vui lòng chọn file!", "error");
+                return false;
+            }
+            originalFile = fileInput.files[0];
+            return true;
+        }
+        
+        // Hàm đọc file dưới dạng mảng byte
+        function readFileAsArrayBuffer(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        }
+        
+        // Hàm đọc file dưới dạng text
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+        
+        // Hàm tạo key an toàn từ mật khẩu người dùng
+        function createSecureKey(password) {
+            // Sử dụng SHA-256 để tạo một key an toàn từ password
+            const hash = CryptoJS.SHA256(password);
+            // Trả về 64 ký tự hex (32 bytes)
+            return hash.toString();
+        }
+        
+        // Hàm chuyển ArrayBuffer thành WordArray (để CryptoJS xử lý)
+        function arrayBufferToWordArray(arrayBuffer) {
+            const bytes = new Uint8Array(arrayBuffer);
+            const words = [];
+            
+            for (let i = 0; i < bytes.length; i += 4) {
+                words.push(
+                    (bytes[i] << 24) | 
+                    ((i + 1 < bytes.length ? bytes[i + 1] : 0) << 16) |
+                    ((i + 2 < bytes.length ? bytes[i + 2] : 0) << 8) |
+                    (i + 3 < bytes.length ? bytes[i + 3] : 0)
+                );
+            }
+            
+            return CryptoJS.lib.WordArray.create(words, bytes.length);
+        }
+        
+        // Hàm chuyển WordArray thành Blob
+        function wordArrayToBlob(wordArray) {
+            const words = wordArray.words;
+            const sigBytes = wordArray.sigBytes;
+            const u8arr = new Uint8Array(sigBytes);
+            
+            for (let i = 0; i < sigBytes; i++) {
+                const byte = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
+                u8arr[i] = byte;
+            }
+            
+            return new Blob([u8arr]);
+        }
+        
+        // Hàm mã hóa file
+        async function encryptFile() {
+            if (!validateFile() || !validateKey(keyInput.value)) {
+                return;
+            }
+            
+            toggleLoading(true);
+            
+            try {
+                // Thêm độ trễ nhỏ để hiệu ứng loading được hiển thị
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Đọc file
+                const arrayBuffer = await readFileAsArrayBuffer(originalFile);
+                const wordArray = arrayBufferToWordArray(arrayBuffer);
+                
+                // Tạo key an toàn từ mật khẩu
+                const secureKey = createSecureKey(keyInput.value);
+                
+                // Tạo metadata chứa thông tin file gốc và hash của mật khẩu để kiểm tra
+                fileMetadata = {
+                    name: originalFile.name,
+                    type: originalFile.type,
+                    keyVerification: CryptoJS.SHA256(keyInput.value).toString().substring(0, 16)
+                };
+                
+                // Mã hóa metadata và nội dung file
+                const encryptedMetadata = CryptoJS.AES.encrypt(
+                    JSON.stringify(fileMetadata), 
+                    secureKey
+                ).toString();
+                
+                // Mã hóa nội dung file
+                const encryptedContent = CryptoJS.AES.encrypt(
+                    wordArray, 
+                    secureKey
+                ).toString();
+                
+                // Kết hợp metadata và nội dung đã mã hóa
+                const finalData = {
+                    metadata: encryptedMetadata,
+                    content: encryptedContent
+                };
+                
+                // Lưu kết quả
+                processedData = JSON.stringify(finalData);
+                resultFileName = originalFile.name + ".enc";
+                
+                // Hiển thị thông báo thành công
+                showMessage("<i class='fas fa-check-circle'></i> Mã hóa thành công! Bạn có thể tải xuống file kết quả.", "success");
+                downloadBtn.disabled = false;
+            } catch (error) {
+                console.error(error);
+                showMessage("<i class='fas fa-times-circle'></i> Lỗi khi mã hóa: " + error.message, "error");
+                downloadBtn.disabled = true;
+            } finally {
+                toggleLoading(false);
+            }
+        }
+        
+        // Hàm giải mã file
+        async function decryptFile() {
+            if (!validateFile() || !validateKey(keyInput.value)) {
+                return;
+            }
+            
+            toggleLoading(true);
+            
+            try {
+                // Thêm độ trễ nhỏ để hiệu ứng loading được hiển thị
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Đọc file
+                const fileContent = await readFileAsText(originalFile);
+                let parsedData;
+                
+                try {
+                    parsedData = JSON.parse(fileContent);
+                    if (!parsedData.metadata || !parsedData.content) {
+                        throw new Error("Định dạng file không hợp lệ");
+                    }
+                } catch (e) {
+                    throw new Error("File không phải là file đã mã hóa hoặc bị hỏng!");
+                }
+                
+                // Tạo key an toàn từ mật khẩu
+                const secureKey = createSecureKey(keyInput.value);
+                
+                // Giải mã metadata
+                let decryptedMetadata;
+                try {
+                    const metadataBytes = CryptoJS.AES.decrypt(parsedData.metadata, secureKey);
+                    decryptedMetadata = JSON.parse(metadataBytes.toString(CryptoJS.enc.Utf8));
+                    
+                    // Kiểm tra mật khẩu
+                    const keyVerification = CryptoJS.SHA256(keyInput.value).toString().substring(0, 16);
+                    if (decryptedMetadata.keyVerification !== keyVerification) {
+                        throw new Error("Mật khẩu không đúng!");
+                    }
+                } catch (e) {
+                    throw new Error("Mật khẩu không đúng hoặc file bị hỏng!");
+                }
+                
+                // Giải mã nội dung file
+                const decryptedContent = CryptoJS.AES.decrypt(parsedData.content, secureKey);
+                
+                // Kiểm tra kết quả giải mã
+                if (decryptedContent.sigBytes <= 0) {
+                    throw new Error("Giải mã thất bại. Mật khẩu không đúng hoặc file bị hỏng!");
+                }
+                
+                // Lưu kết quả
+                processedData = decryptedContent;
+                resultFileName = decryptedMetadata.name;
+                
+                // Hiển thị thông báo thành công
+                showMessage("<i class='fas fa-check-circle'></i> Giải mã thành công! Bạn có thể tải xuống file kết quả.", "success");
+                downloadBtn.disabled = false;
+            } catch (error) {
+                console.error(error);
+                showMessage("<i class='fas fa-times-circle'></i> Lỗi khi giải mã: " + error.message, "error");
+                downloadBtn.disabled = true;
+            } finally {
+                toggleLoading(false);
+            }
+        }
+        
+        // Hàm tải xuống file kết quả
+        function downloadResult() {
+            if (!processedData) {
+                showMessage("<i class='fas fa-exclamation-circle'></i> Không có dữ liệu để tải xuống!", "error");
+                return;
+            }
+            
+            try {
+                let blob;
+                
+                if (typeof processedData === 'string') {
+                    // Dữ liệu đã mã hóa
+                    blob = new Blob([processedData], {type: 'application/octet-stream'});
+                } else {
+                    // Dữ liệu đã giải mã
+                    blob = wordArrayToBlob(processedData);
+                }
+                
+                // Tạo URL và liên kết tải xuống
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = resultFileName;
+                document.body.appendChild(a);
+                a.click();
+                
+                // Dọn dẹp
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+                
+                showMessage("<i class='fas fa-check-circle'></i> Đã tải xuống file: " + resultFileName, "success");
+            } catch (error) {
+                console.error(error);
+                showMessage("<i class='fas fa-times-circle'></i> Lỗi khi tải xuống: " + error.message, "error");
+            }
+        }
+        
+        // Thêm các sự kiện lắng nghe
+        encryptBtn.addEventListener('click', encryptFile);
+        decryptBtn.addEventListener('click', decryptFile);
+        downloadBtn.addEventListener('click', downloadResult);
+        
+        // Reset khi thay đổi key
+        keyInput.addEventListener('input', function() {
+            if (processedData) {
+                downloadBtn.disabled = true;
+                resultBox.style.display = 'none';
+                processedData = null;
+            }
+        });
+
+        // Hiệu ứng khi load trang
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.querySelector('.container');
+            container.classList.add('animate-in');
+        });
+    </script>
+</body>
+</html>
